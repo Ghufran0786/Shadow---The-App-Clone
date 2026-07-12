@@ -9,4 +9,3 @@ dependencyResolutionManagement {
 rootProject.name = "Shadow"
 include ':app'
 include ':opensdk'
-include ':assist'
