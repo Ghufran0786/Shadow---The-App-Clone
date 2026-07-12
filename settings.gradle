@@ -3,10 +3,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        jcenter() // Warning: this repository is going to shut down soon
+        maven { url 'https://jitpack.io' }
     }
 }
-rootProject.name = "GithubMultiApp"
+rootProject.name = "Shadow"
 include ':app'
 include ':opensdk'
 include ':assist'

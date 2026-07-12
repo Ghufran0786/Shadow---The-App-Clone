@@ -9,10 +9,13 @@ android {
     defaultConfig {
         if (rootProject.ext.isMasterPkg) {
             applicationId rootProject.ext.masterPkg
-            manifestPlaceholders = [label: "Waxmoon"]
+            manifestPlaceholders = [label: "Shadow"]
+            ndk {
+                abiFilters 'arm64-v8a'
+            }
         } else {
             applicationId rootProject.ext.assistPkg
-            manifestPlaceholders = [label: "Waxmoon32"]
+            manifestPlaceholders = [label: "Shadow32"]
             ndk.abiFilters 'armeabi-v7a'
         }
         minSdk rootProject.ext.minSdkVersion
@@ -90,6 +93,7 @@ dependencies {
     implementation "androidx.compose.material:material:$compose_version"
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
     implementation 'androidx.activity:activity-compose:1.5.0'
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
