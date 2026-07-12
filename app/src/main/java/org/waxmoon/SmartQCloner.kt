@@ -1,6 +1,7 @@
 package org.waxmoon
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
 import com.hack.opensdk.HackApi
@@ -72,9 +73,9 @@ object SmartQCloner {
                 )
             }
 
-            val launchIntent = HackApi.getLaunchIntentForPackage(SMARTQ_PACKAGE, CLONE_USER_ID)
+            val launchIntent = resolveLaunchIntent(pm)
             if (launchIntent == null) {
-                Log.e(TAG, "getLaunchIntentForPackage returned null for userId=$CLONE_USER_ID")
+                Log.e(TAG, "no launch intent found for package=$SMARTQ_PACKAGE userId=$CLONE_USER_ID")
                 return CloneResult(
                     success = false,
                     installCode = installCode,
@@ -87,12 +88,17 @@ object SmartQCloner {
             Log.i(TAG, "startActivity result=$launchCode")
 
             if (launchCode != START_SUCCESS) {
-                return CloneResult(
-                    success = false,
-                    installCode = installCode,
-                    launchCode = launchCode,
-                    message = "Install OK but launch failed with code $launchCode",
-                )
+                Log.w(TAG, "startActivity failed, trying startPackage fallback")
+                val started = HackApi.startPackage(SMARTQ_PACKAGE, CLONE_USER_ID)
+                Log.i(TAG, "startPackage result=$started")
+                if (!started) {
+                    return CloneResult(
+                        success = false,
+                        installCode = installCode,
+                        launchCode = launchCode,
+                        message = "Install OK but launch failed (startActivity=$launchCode, startPackage=false)",
+                    )
+                }
             }
 
             Log.i(TAG, "cloneAndLaunch success install=$installCode launch=$launchCode")
@@ -106,6 +112,25 @@ object SmartQCloner {
             Log.e(TAG, "cloneAndLaunch failed", e)
             return CloneResult(success = false, message = e.message ?: e.javaClass.simpleName)
         }
+    }
+
+    /**
+     * MultiApp's own AppListActivity resolves the launch intent from the **host**
+     * PackageManager, then passes it to HackApi.startActivity(intent, userId).
+     * The virtual PM (HackApi.getLaunchIntentForPackage) often returns null right after install.
+     */
+    private fun resolveLaunchIntent(pm: PackageManager): Intent? {
+        val hostIntent = pm.getLaunchIntentForPackage(SMARTQ_PACKAGE)?.apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+        }
+        Log.i(TAG, "host getLaunchIntentForPackage=$hostIntent")
+        if (hostIntent != null) {
+            return hostIntent
+        }
+
+        val virtualIntent = HackApi.getLaunchIntentForPackage(SMARTQ_PACKAGE, CLONE_USER_ID)
+        Log.i(TAG, "virtual getLaunchIntentForPackage=$virtualIntent")
+        return virtualIntent
     }
 
     private fun copyApk(source: File, dest: File) {
